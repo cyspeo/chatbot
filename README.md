@@ -1,2 +1,2 @@
 # chatbot
-poc of chabots
+Chatbot pocs
