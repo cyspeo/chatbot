@@ -68,6 +68,7 @@ var Datastore = require('nedb')
 db = {};
 db.intents = new Datastore({ filename: './db/intents.db', autoload: true });
 db.entities = new Datastore({ filename: './db/entities.db', autoload: true });
+db.dialogs = new Datastore({ filename: './db/dialogs.db', autoload: true });
 
 let intents = [];
 
@@ -76,6 +77,11 @@ var searchIntent = function (message) {
 }
 
 
+var searchDialog = function(intent,cb) {
+    db.dialogs.find({condition:intent}, function (err, docs) {
+        cb(docs);
+    });
+}
 /**
  * REcherche une intent.
  * TODO gérer le mode asynchrone.
@@ -169,7 +175,9 @@ controller.hears([''], 'message_received', function (bot, message) {
             //console.log("intent trouve" + JSON.stringify(intent))
             bot.reply(message, 'Ok i anderstand this intent : ' + intent);
             //TODO Si l'intent n'a pas été trouve avec une correspondance exact on peut enregistrer le message comme example pour cette intention
-
+            searchDialog(intent,function(dialogs) {
+                
+            })
             //TODO Si l'action de l'intention necessite des paramètres il faut entamer un dialog
             // - pour cela il faut associer une action à l'intention
             // - pour chaque paramètre de l'action nécessaire il faut vérifier s'il sont dans le message initiale  ou ouvrir un dialog pour les demander
