@@ -81,7 +81,7 @@ var searchIntent = function (message) {
  * TODO gérer le mode asynchrone.
  * @param {*} message 
  */
-var checkIntent = function (message) {
+var checkIntent = function (message, cb) {
     result = [];
     db.intents.find({}, function (err, docs) {
 
@@ -89,7 +89,7 @@ var checkIntent = function (message) {
         docs.forEach((doc, index, array) => {
             console.log('doc=' + JSON.stringify(doc))
             doc.examples.forEach((example, ind, arr) => {
-                console.log('example=' + example);
+                //console.log('example=' + example);
                 if (example == message) {
                     var resultIntent = {
                         'intent': doc.intent,
@@ -98,7 +98,7 @@ var checkIntent = function (message) {
                     }
                     result.push(resultIntent);
                 } else {
-                    console.log("message:" + JSON.stringify(message));
+                    //console.log("message:" + JSON.stringify(message));
                     var mots = message.split(" ");
                     nbMot = 0;
                     //Pour chaque mot du message regarder s'il est présent dans l'exemple
@@ -129,52 +129,56 @@ var checkIntent = function (message) {
         if (!finalIntent && result.length > 0) {
             finalIntent = Math.max.apply(Math, result.map(function (o) { return o.nbWordsMatch; }))
         }
-        console.log('checkIntent =' + JSON.stringify(finalIntent + '.'));
+        //console.log('checkIntent =' + JSON.stringify(finalIntent + '.'));
         if (finalIntent != null && finalIntent.length > 0) {
-            console.log("finalIntent " + JSON.stringify(finalIntent));
-            return finalIntent[0].intent;
+            //console.log("finalIntent " + JSON.stringify(finalIntent));
+            return cb(finalIntent[0].intent);
         } else {
-            return null;
+            cb();
+            return
         }
     });
 }
 
 controller.hears([''], 'message_received', function (bot, message) {
-    let intent = checkIntent(message.text);
-    console.log('intent after check='+intent);
-    if (intent == null || intent.length == 0) {
-        bot.startConversation(message, function (err, convo) {
-            if (!err) {
-                convo.say('I do not anderstand.');
-                convo.ask('What is the intent ?`', function (response, convo) {
-                    let examples = [];
-                    examples.push(message.text);
-                    let intent = {
-                        'intent': response.text,
-                        'examples': examples
-                    }
-                    //intents.push(intent);
-                    db.intents.insert(intent, function (err, newDocs) {
+    checkIntent(message.text, function (intent) {
 
-                    })
-                    convo.say('Cool i have learn a new intent!');
-                    convo.next();
-                });
-            }
-        });
-    } else {
-        console.log("intent trouve" + JSON.stringify(intent))
-        bot.reply(message, 'Ok i anderstand this intent : ' + intent.intent);
-        //TODO Si l'intent n'a pas été trouve avec une correspondance exact on peut enregistrer le message comme example pour cette intention
 
-        //TODO Si l'action de l'intention necessite des paramètres il faut entamer un dialog
-        // - pour cela il faut associer une action à l'intention
-        // - pour chaque paramètre de l'action nécessaire il faut vérifier s'il sont dans le message initiale  ou ouvrir un dialog pour les demander
-        // - exemple : prendre un rendez vous. Il faut le jour, l'heure, avec qui.
-        // - exemple : lister les rendez a venir. Il ne faut aucun paramètre
-        // *** Faut il associer un verbe à chaque intention? ex : ajouter, supprimer, lister, rechercher, voir... ***
+        //console.log('intent after check=' + intent);
+        if (intent == null || intent.length == 0) {
+            bot.startConversation(message, function (err, convo) {
+                if (!err) {
+                    convo.say('I do not anderstand.');
+                    convo.ask('What is the intent ?`', function (response, convo) {
+                        let examples = [];
+                        examples.push(message.text);
+                        let intent = {
+                            'intent': response.text,
+                            'examples': examples
+                        }
+                        //intents.push(intent);
+                        db.intents.insert(intent, function (err, newDocs) {
 
-        //findDialog(intent);
-    }
+                        })
+                        convo.say('Cool i have learn a new intent!');
+                        convo.next();
+                    });
+                }
+            });
+        } else {
+            //console.log("intent trouve" + JSON.stringify(intent))
+            bot.reply(message, 'Ok i anderstand this intent : ' + intent);
+            //TODO Si l'intent n'a pas été trouve avec une correspondance exact on peut enregistrer le message comme example pour cette intention
+
+            //TODO Si l'action de l'intention necessite des paramètres il faut entamer un dialog
+            // - pour cela il faut associer une action à l'intention
+            // - pour chaque paramètre de l'action nécessaire il faut vérifier s'il sont dans le message initiale  ou ouvrir un dialog pour les demander
+            // - exemple : prendre un rendez vous. Il faut le jour, l'heure, avec qui.
+            // - exemple : lister les rendez a venir. Il ne faut aucun paramètre
+            // *** Faut il associer un verbe à chaque intention? ex : ajouter, supprimer, lister, rechercher, voir... ***
+
+            //findDialog(intent);
+        }
+    });
 });
 
