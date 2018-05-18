@@ -58,6 +58,8 @@ This bot demonstrates many of the core features of Botkit:
 
 var Botkit = require('botkit');
 var os = require('os');
+var Q = require('q');
+
 var controller = Botkit.consolebot({
     debug: false,
 });
@@ -70,6 +72,7 @@ db.intents = new Datastore({ filename: './db/intents.db', autoload: true });
 db.entities = new Datastore({ filename: './db/entities.db', autoload: true });
 db.dialogs = new Datastore({ filename: './db/dialogs.db', autoload: true });
 
+
 let intents = [];
 
 var searchIntent = function (message) {
@@ -77,10 +80,16 @@ var searchIntent = function (message) {
 }
 
 
-var searchDialog = function(intent,cb) {
+var searchDialog = function(intent) {
+    var deferred = Q.defer();
     db.dialogs.find({condition:intent}, function (err, docs) {
-        cb(docs);
+        if (err) {
+            deferred.reject(err);
+        } else {
+            deferred.resolve(docs)
+        }
     });
+    return deferred.promise;
 }
 /**
  * REcherche une intent.
@@ -118,7 +127,7 @@ var checkIntent = function (message, cb) {
                     });
                     if (nbMot > 0) {
                         var resultIntent = {
-                            'intent': intent,
+                            'intent': doc.intent,
                             'exact': false,
                             'nbWordsMatch': nbMot
                         }
@@ -175,8 +184,10 @@ controller.hears([''], 'message_received', function (bot, message) {
             //console.log("intent trouve" + JSON.stringify(intent))
             bot.reply(message, 'Ok i anderstand this intent : ' + intent);
             //TODO Si l'intent n'a pas été trouve avec une correspondance exact on peut enregistrer le message comme example pour cette intention
-            searchDialog(intent,function(dialogs) {
-                
+            searchDialog(intent).then(function (docs) {
+                if (docs.length == 0) {
+                    bot.reply(message, 'no dialog found ');
+                }
             })
             //TODO Si l'action de l'intention necessite des paramètres il faut entamer un dialog
             // - pour cela il faut associer une action à l'intention

@@ -1,1 +1,2 @@
 {"intent":"greeting","examples":["salut bot"],"_id":"pFydMM8kwGtpXrxn"}
+{"intent":"create_dialog","examples":["could you create it"],"_id":"nRIuejBpyU77E2vV"}
